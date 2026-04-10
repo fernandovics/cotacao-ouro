@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://cotacao-ouro.groferapp.com/sitemap.xml
