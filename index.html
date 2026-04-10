@@ -459,6 +459,14 @@
             text-align: center;
         }
 
+        .input-kg-hint {
+            font-size: 0.65rem;
+            color: var(--text-faint);
+            margin-top: 0.2rem;
+            text-align: center;
+            min-height: 0.9rem;
+        }
+
         /* Chart */
         .chart-container {
             background: var(--card-bg);
@@ -639,7 +647,8 @@
             <div class="calculator">
                 <div class="calc-input-group">
                     <label for="calc-grams">Gramas de ouro:</label>
-                    <input type="number" id="calc-grams" value="1" min="0" step="0.1">
+                    <input type="text" id="calc-grams" value="1" inputmode="decimal">
+                    <div class="input-kg-hint" id="calc-kg-hint"></div>
                 </div>
                 <div class="calc-spread">
                     <label for="calc-spread-check">
@@ -689,7 +698,8 @@
                 <div class="sim-row">
                     <div class="sim-input-group">
                         <label for="sim-grams">Gramas de ouro:</label>
-                        <input type="number" id="sim-grams" value="1" min="0" step="0.1">
+                        <input type="text" id="sim-grams" value="1" inputmode="decimal">
+                        <div class="input-kg-hint" id="sim-kg-hint"></div>
                     </div>
                     <div class="calc-arrow">&#10132;</div>
                     <div>
@@ -809,6 +819,41 @@
                 </svg>`;
         }
 
+        // Gram input formatting
+        function parseGrams(value) {
+            return parseFloat(String(value).replace(/\./g, '').replace(',', '.')) || 0;
+        }
+
+        function formatGramInput(input) {
+            const raw = input.value.replace(/[^\d]/g, '');
+            const num = parseInt(raw) || 0;
+            if (num > 0) {
+                input.value = num.toLocaleString('pt-BR');
+            }
+        }
+
+        function updateKgHint(hintId, grams) {
+            const el = document.getElementById(hintId);
+            if (grams >= 1000) {
+                el.textContent = `= ${fmt(grams / 1000, 2)} kg`;
+            } else {
+                el.textContent = '';
+            }
+        }
+
+        function setupGramInput(input, hintId, callback) {
+            input.addEventListener('input', () => {
+                const pos = input.selectionStart;
+                const oldLen = input.value.length;
+                formatGramInput(input);
+                const newLen = input.value.length;
+                input.setSelectionRange(pos + (newLen - oldLen), pos + (newLen - oldLen));
+                const grams = parseGrams(input.value);
+                updateKgHint(hintId, grams);
+                callback();
+            });
+        }
+
         // Price table
         function updatePriceTable(pricePerGram) {
             const tbody = document.getElementById('price-table-body');
@@ -822,7 +867,7 @@
         const spreadCheck = document.getElementById('calc-spread-check');
         const spreadInput = document.getElementById('calc-spread-value');
 
-        calcInput.addEventListener('input', updateCalc);
+        setupGramInput(calcInput, 'calc-kg-hint', updateCalc);
         spreadCheck.addEventListener('change', () => {
             spreadInput.disabled = !spreadCheck.checked;
             updateCalc();
@@ -830,7 +875,7 @@
         spreadInput.addEventListener('input', updateCalc);
 
         function updateCalc() {
-            const grams = parseFloat(calcInput.value) || 0;
+            const grams = parseGrams(calcInput.value);
 
             if (currentGoldBrlPerGram <= 0) {
                 document.getElementById('calc-result').textContent = 'R$ --';
@@ -859,9 +904,10 @@
         const simSpreadCheck = document.getElementById('sim-spread-check');
         const simSpreadInput = document.getElementById('sim-spread-value');
 
-        [simGold, simDollar, simGrams, simSpreadInput].forEach(el =>
+        [simGold, simDollar, simSpreadInput].forEach(el =>
             el.addEventListener('input', updateSim)
         );
+        setupGramInput(simGrams, 'sim-kg-hint', updateSim);
         simSpreadCheck.addEventListener('change', () => {
             simSpreadInput.disabled = !simSpreadCheck.checked;
             updateSim();
@@ -870,7 +916,7 @@
         function updateSim() {
             const gold = parseFloat(simGold.value) || 0;
             const dollar = parseFloat(simDollar.value) || 0;
-            const grams = parseFloat(simGrams.value) || 0;
+            const grams = parseGrams(simGrams.value);
 
             if (gold <= 0 || dollar <= 0) {
                 document.getElementById('sim-result').textContent = 'R$ --';
