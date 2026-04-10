@@ -1,0 +1,852 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cotação do Ouro</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root[data-theme="dark"] {
+            --bg: #0a0a0f;
+            --card-bg: linear-gradient(145deg, #16161e, #1a1a25);
+            --card-border: #2a2a35;
+            --text: #fff;
+            --text-muted: #888;
+            --text-dim: #666;
+            --text-faint: #555;
+            --gold: #f0c75e;
+            --gold-dark: #d4a843;
+            --gold-darker: #b8860b;
+            --input-bg: #16161e;
+            --table-row: rgba(255,255,255,0.03);
+            --table-border: #2a2a35;
+        }
+
+        :root[data-theme="light"] {
+            --bg: #f5f0e8;
+            --card-bg: linear-gradient(145deg, #ffffff, #faf7f0);
+            --card-border: #e0d5c0;
+            --text: #1a1a1a;
+            --text-muted: #666;
+            --text-dim: #888;
+            --text-faint: #999;
+            --gold: #b8860b;
+            --gold-dark: #8b6914;
+            --gold-darker: #6b4f0a;
+            --input-bg: #fff;
+            --table-row: rgba(0,0,0,0.03);
+            --table-border: #e0d5c0;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            padding: 2rem 1rem;
+            transition: background 0.3s, color 0.3s;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* Theme toggle */
+        .theme-toggle {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            background: var(--input-bg);
+            border: 1px solid var(--card-border);
+            color: var(--text);
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+            z-index: 10;
+        }
+        .theme-toggle:hover { border-color: var(--gold-dark); }
+
+        h1 {
+            font-size: 1.4rem;
+            font-weight: 400;
+            color: var(--gold-dark);
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            margin-bottom: 2.5rem;
+            text-align: center;
+        }
+
+        /* Cards */
+        .cards {
+            display: flex;
+            gap: 1.5rem;
+            flex-wrap: wrap;
+            justify-content: center;
+            width: 100%;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 1.5rem 2rem;
+            min-width: 280px;
+            flex: 1;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            transition: border-color 0.3s;
+        }
+        .card:hover { border-color: var(--gold-dark); }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--gold-darker), var(--gold-dark), var(--gold));
+        }
+
+        .card-label {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 0.8rem;
+        }
+
+        .card-value {
+            font-size: 2.2rem;
+            font-weight: 700;
+            color: var(--gold);
+            font-variant-numeric: tabular-nums;
+            min-height: 2.8rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .card-value.loading { font-size: 1rem; color: var(--text-faint); }
+        .card-value.error { font-size: 0.9rem; color: #e74c3c; }
+
+        .card-unit {
+            font-size: 0.8rem;
+            color: var(--text-dim);
+            margin-top: 0.3rem;
+        }
+
+        .card-change {
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-top: 0.6rem;
+        }
+        .card-change.up { color: #2ecc71; }
+        .card-change.down { color: #e74c3c; }
+
+        .card-details {
+            font-size: 0.7rem;
+            color: var(--text-faint);
+            margin-top: 0.5rem;
+            line-height: 1.6;
+        }
+
+        .card-note {
+            font-size: 0.7rem;
+            color: var(--text-faint);
+            margin-top: 0.5rem;
+            line-height: 1.4;
+        }
+
+        .sparkline-container {
+            margin-top: 0.8rem;
+            height: 35px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .sparkline-container svg {
+            width: 100%;
+            max-width: 200px;
+            height: 35px;
+        }
+
+        /* Calculator */
+        .section {
+            width: 100%;
+            margin-top: 2.5rem;
+        }
+
+        .section-title {
+            font-size: 0.9rem;
+            color: var(--gold-dark);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+
+        .calculator {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 1.5rem 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .calc-input-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .calc-input-group label {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .calc-input-group input {
+            width: 100px;
+            padding: 0.5rem 0.8rem;
+            border-radius: 8px;
+            border: 1px solid var(--card-border);
+            background: var(--input-bg);
+            color: var(--text);
+            font-size: 1rem;
+            text-align: center;
+            font-variant-numeric: tabular-nums;
+            transition: border-color 0.3s;
+        }
+        .calc-input-group input:focus {
+            outline: none;
+            border-color: var(--gold-dark);
+        }
+
+        .calc-result {
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: var(--gold);
+            font-variant-numeric: tabular-nums;
+            min-width: 150px;
+            text-align: center;
+        }
+
+        .calc-arrow {
+            font-size: 1.2rem;
+            color: var(--text-dim);
+        }
+
+        .calc-spread {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .calc-spread label {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+
+        .calc-spread input[type="checkbox"] {
+            accent-color: var(--gold-dark);
+            cursor: pointer;
+            width: 16px;
+            height: 16px;
+        }
+
+        .calc-spread input[type="number"] {
+            width: 65px;
+            padding: 0.4rem 0.5rem;
+            border-radius: 8px;
+            border: 1px solid var(--card-border);
+            background: var(--input-bg);
+            color: var(--text);
+            font-size: 0.9rem;
+            text-align: center;
+            transition: border-color 0.3s, opacity 0.3s;
+        }
+        .calc-spread input[type="number"]:focus {
+            outline: none;
+            border-color: var(--gold-dark);
+        }
+        .calc-spread input[type="number"]:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        .calc-spread-pct {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .calc-result-detail {
+            font-size: 0.75rem;
+            color: var(--text-faint);
+            margin-top: 0.2rem;
+            text-align: center;
+        }
+
+        /* Chart */
+        .chart-container {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            width: 100%;
+            max-height: 300px;
+        }
+
+        /* Price table */
+        .price-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            overflow: hidden;
+        }
+
+        .price-table th {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-muted);
+            padding: 0.8rem 1rem;
+            text-align: center;
+            border-bottom: 1px solid var(--table-border);
+        }
+
+        .price-table td {
+            padding: 0.6rem 1rem;
+            text-align: center;
+            font-size: 0.9rem;
+            color: var(--text);
+            font-variant-numeric: tabular-nums;
+        }
+
+        .price-table tr:nth-child(even) {
+            background: var(--table-row);
+        }
+
+        .price-table td:last-child {
+            color: var(--gold);
+            font-weight: 600;
+        }
+
+        /* Info bar (between cards and calculator) */
+        .info-bar {
+            margin-top: 1.2rem;
+            text-align: center;
+        }
+
+        .update-info {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .sources {
+            margin-top: 0.3rem;
+            font-size: 0.7rem;
+            color: var(--text-dim);
+        }
+        .sources a {
+            color: var(--text-muted);
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+        .sources a:hover { color: var(--gold-dark); }
+
+        /* Footer with GROFER branding */
+        .footer {
+            margin-top: 2.5rem;
+            text-align: center;
+            padding: 1rem 0;
+        }
+
+        .footer-brand {
+            text-decoration: none;
+            color: var(--text-dim);
+            display: inline-flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.4rem;
+            transition: color 0.2s;
+            font-size: 0.7rem;
+        }
+        .footer-brand:hover { color: var(--gold-dark); }
+
+        .footer img {
+            height: 28px;
+            width: auto;
+        }
+
+        .footer-socials {
+            display: flex;
+            gap: 1rem;
+            margin-top: 0.6rem;
+            justify-content: center;
+        }
+
+        .footer-socials a {
+            color: var(--text-faint);
+            text-decoration: none;
+            font-size: 0.65rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+            transition: color 0.2s;
+        }
+        .footer-socials a:hover { color: var(--gold-dark); }
+
+        .footer-socials svg {
+            width: 14px;
+            height: 14px;
+            fill: currentColor;
+        }
+
+        [data-theme="dark"] .logo-light { display: inline; }
+        [data-theme="dark"] .logo-dark { display: none; }
+        [data-theme="light"] .logo-light { display: none; }
+        [data-theme="light"] .logo-dark { display: inline; }
+
+        @media (max-width: 700px) {
+            .cards { flex-direction: column; align-items: center; }
+            .card { width: 100%; max-width: 340px; min-width: unset; }
+            .card-value { font-size: 1.8rem; }
+            .calculator { flex-direction: column; }
+            .calc-arrow { transform: rotate(90deg); }
+        }
+    </style>
+</head>
+<body>
+    <button class="theme-toggle" id="theme-toggle" title="Alternar tema">&#9790;</button>
+
+    <div class="container">
+        <h1>Cotação do Ouro em Tempo Real</h1>
+
+        <!-- Cards -->
+        <div class="cards">
+            <div class="card">
+                <div class="card-label">Ouro</div>
+                <div class="card-value loading" id="gold-usd">Carregando...</div>
+                <div class="card-unit">USD / oz troy</div>
+                <div class="card-change" id="gold-change"></div>
+                <div class="card-details" id="gold-details"></div>
+                <div class="sparkline-container" id="gold-spark"></div>
+            </div>
+
+            <div class="card">
+                <div class="card-label">Dólar</div>
+                <div class="card-value loading" id="usd-brl">Carregando...</div>
+                <div class="card-unit">BRL / USD</div>
+                <div class="card-change" id="dollar-change"></div>
+                <div class="card-details" id="dollar-details"></div>
+                <div class="sparkline-container" id="dollar-spark"></div>
+            </div>
+
+            <div class="card">
+                <div class="card-label">Ouro</div>
+                <div class="card-value loading" id="gold-brl">Carregando...</div>
+                <div class="card-unit">R$ / grama</div>
+                <div class="card-note">1 oz troy = 31,1034768 g</div>
+            </div>
+        </div>
+
+        <!-- Info bar -->
+        <div class="info-bar">
+            <div class="update-info" id="update-info"></div>
+            <div class="sources">
+                Fontes: <a href="https://finance.yahoo.com/quote/GC=F" target="_blank">Yahoo Finance</a> (Ouro GC=F) · <a href="https://finance.yahoo.com/quote/BRL=X" target="_blank">Yahoo Finance</a> (USD/BRL)
+            </div>
+        </div>
+
+        <!-- Calculator -->
+        <div class="section">
+            <div class="section-title">Calculadora</div>
+            <div class="calculator">
+                <div class="calc-input-group">
+                    <label for="calc-grams">Gramas:</label>
+                    <input type="number" id="calc-grams" value="1" min="0" step="0.1">
+                </div>
+                <div class="calc-spread">
+                    <label for="calc-spread-check">
+                        <input type="checkbox" id="calc-spread-check"> Spread
+                    </label>
+                    <input type="number" id="calc-spread-value" value="5" min="0" step="0.1" disabled>
+                    <span class="calc-spread-pct">%</span>
+                </div>
+                <div class="calc-arrow">&#10132;</div>
+                <div>
+                    <div class="calc-result" id="calc-result">R$ --</div>
+                    <div class="calc-result-detail" id="calc-detail"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chart -->
+        <div class="section">
+            <div class="section-title">Ouro R$/g — Últimos 30 dias</div>
+            <div class="chart-container">
+                <canvas id="history-chart"></canvas>
+            </div>
+        </div>
+
+        <!-- Price table -->
+        <div class="section">
+            <div class="section-title">Tabela de Preços por Peso</div>
+            <table class="price-table">
+                <thead>
+                    <tr><th>Peso</th><th>Valor (R$)</th></tr>
+                </thead>
+                <tbody id="price-table-body"></tbody>
+            </table>
+        </div>
+
+        <!-- Footer GROFER -->
+        <div class="footer">
+            <a href="https://groferapp.com" target="_blank" class="footer-brand">
+                <img src="/logo-claro.png" alt="GROFER" class="logo-light">
+                <img src="/logo-escuro.png" alt="GROFER" class="logo-dark">
+                <span>Desenvolvido por GROFER</span>
+            </a>
+            <div class="footer-socials">
+                <a href="https://groferapp.com" target="_blank">
+                    <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+                    groferapp.com
+                </a>
+                <a href="https://instagram.com/groferapp" target="_blank">
+                    <svg viewBox="0 0 24 24"><path d="M7.8 2h8.4C19.4 2 22 4.6 22 7.8v8.4a5.8 5.8 0 0 1-5.8 5.8H7.8C4.6 22 2 19.4 2 16.2V7.8A5.8 5.8 0 0 1 7.8 2m-.2 2A3.6 3.6 0 0 0 4 7.6v8.8C4 18.39 5.61 20 7.6 20h8.8a3.6 3.6 0 0 0 3.6-3.6V7.6C20 5.61 18.39 4 16.4 4H7.6m9.65 1.5a1.25 1.25 0 0 1 1.25 1.25A1.25 1.25 0 0 1 17.25 8 1.25 1.25 0 0 1 16 6.75a1.25 1.25 0 0 1 1.25-1.25M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3z"/></svg>
+                    @groferapp
+                </a>
+                <a href="https://www.linkedin.com/company/grofer-tecnologia" target="_blank">
+                    <svg viewBox="0 0 24 24"><path d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14m-.5 15.5v-5.3a3.26 3.26 0 0 0-3.26-3.26c-.85 0-1.84.52-2.32 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 0 1 1.4 1.4v4.93h2.79M6.88 8.56a1.68 1.68 0 0 0 1.68-1.68c0-.93-.75-1.69-1.68-1.69a1.69 1.69 0 0 0-1.69 1.69c0 .93.76 1.68 1.69 1.68m1.39 9.94v-8.37H5.5v8.37h2.77z"/></svg>
+                    LinkedIn
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const OZ_TO_GRAMS = 31.1034768;
+        const WEIGHTS = [1, 5, 10, 25, 31.1034768, 50, 100];
+        const WEIGHT_LABELS = ['1 g', '5 g', '10 g', '25 g', '1 oz (31,10 g)', '50 g', '100 g'];
+        const MESES = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+        let currentGoldBrlPerGram = 0;
+        let historyChart = null;
+
+        function fmt(value, decimals = 2) {
+            return value.toLocaleString('pt-BR', {
+                minimumFractionDigits: decimals,
+                maximumFractionDigits: decimals
+            });
+        }
+
+        // Theme
+        function initTheme() {
+            const saved = localStorage.getItem('ouro-theme') || 'dark';
+            document.documentElement.setAttribute('data-theme', saved);
+            updateThemeIcon(saved);
+        }
+
+        function updateThemeIcon(theme) {
+            document.getElementById('theme-toggle').innerHTML = theme === 'dark' ? '&#9788;' : '&#9790;';
+        }
+
+        document.getElementById('theme-toggle').addEventListener('click', () => {
+            const current = document.documentElement.getAttribute('data-theme');
+            const next = current === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', next);
+            localStorage.setItem('ouro-theme', next);
+            updateThemeIcon(next);
+            if (historyChart) updateChartColors();
+        });
+
+        // Sparkline SVG
+        function createSparkline(containerId, data, color = '#d4a843') {
+            const container = document.getElementById(containerId);
+            if (!data || data.length < 2) { container.innerHTML = ''; return; }
+
+            const w = 200, h = 35, pad = 2;
+            const min = Math.min(...data), max = Math.max(...data);
+            const range = max - min || 1;
+
+            const points = data.map((v, i) => {
+                const x = pad + (i / (data.length - 1)) * (w - 2 * pad);
+                const y = h - pad - ((v - min) / range) * (h - 2 * pad);
+                return `${x},${y}`;
+            });
+
+            const polyline = points.join(' ');
+            const areaPoints = `${pad},${h - pad} ${polyline} ${w - pad},${h - pad}`;
+
+            container.innerHTML = `
+                <svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">
+                    <polygon points="${areaPoints}" fill="${color}" opacity="0.15"/>
+                    <polyline points="${polyline}" fill="none" stroke="${color}" stroke-width="1.5" stroke-linejoin="round"/>
+                </svg>`;
+        }
+
+        // Price table
+        function updatePriceTable(pricePerGram) {
+            const tbody = document.getElementById('price-table-body');
+            tbody.innerHTML = WEIGHTS.map((w, i) =>
+                `<tr><td>${WEIGHT_LABELS[i]}</td><td>R$ ${fmt(pricePerGram * w, 2)}</td></tr>`
+            ).join('');
+        }
+
+        // Calculator
+        const calcInput = document.getElementById('calc-grams');
+        const spreadCheck = document.getElementById('calc-spread-check');
+        const spreadInput = document.getElementById('calc-spread-value');
+
+        calcInput.addEventListener('input', updateCalc);
+        spreadCheck.addEventListener('change', () => {
+            spreadInput.disabled = !spreadCheck.checked;
+            updateCalc();
+        });
+        spreadInput.addEventListener('input', updateCalc);
+
+        function updateCalc() {
+            const grams = parseFloat(calcInput.value) || 0;
+            const baseResult = grams * currentGoldBrlPerGram;
+
+            if (currentGoldBrlPerGram <= 0) {
+                document.getElementById('calc-result').textContent = 'R$ --';
+                document.getElementById('calc-detail').textContent = '';
+                return;
+            }
+
+            if (spreadCheck.checked) {
+                const spreadPct = parseFloat(spreadInput.value) || 0;
+                const withSpread = baseResult * (1 - spreadPct / 100);
+                document.getElementById('calc-result').textContent = `R$ ${fmt(withSpread, 2)}`;
+                document.getElementById('calc-detail').textContent = `Base: R$ ${fmt(baseResult, 2)} - ${fmt(spreadPct, 1)}% spread`;
+            } else {
+                document.getElementById('calc-result').textContent = `R$ ${fmt(baseResult, 2)}`;
+                document.getElementById('calc-detail').textContent = '';
+            }
+        }
+
+        // Chart
+        function getChartColors() {
+            const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+            return {
+                line: isDark ? '#d4a843' : '#8b6914',
+                fill: isDark ? 'rgba(212,168,67,0.1)' : 'rgba(139,105,20,0.1)',
+                grid: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.08)',
+                text: isDark ? '#888' : '#666'
+            };
+        }
+
+        function updateChartColors() {
+            if (!historyChart) return;
+            const c = getChartColors();
+            historyChart.data.datasets[0].borderColor = c.line;
+            historyChart.data.datasets[0].backgroundColor = c.fill;
+            historyChart.options.scales.x.ticks.color = c.text;
+            historyChart.options.scales.y.ticks.color = c.text;
+            historyChart.options.scales.x.grid.color = c.grid;
+            historyChart.options.scales.y.grid.color = c.grid;
+            historyChart.update('none');
+        }
+
+        async function loadHistory() {
+            try {
+                const res = await fetch('/api/quotes?type=history');
+                if (!res.ok) throw new Error('Erro na API');
+                const data = await res.json();
+
+                const goldTs = data.gold.timestamps;
+                const goldCloses = data.gold.closes;
+                const dollarTs = data.dollar.timestamps;
+                const dollarCloses = data.dollar.closes;
+
+                // Build dollar map by date
+                const dollarMap = {};
+                dollarTs.forEach((ts, i) => {
+                    const date = new Date(ts * 1000).toISOString().slice(0, 10);
+                    dollarMap[date] = dollarCloses[i];
+                });
+
+                const labels = [];
+                const values = [];
+
+                goldTs.forEach((ts, i) => {
+                    const date = new Date(ts * 1000).toISOString().slice(0, 10);
+                    const goldUsd = goldCloses[i];
+                    const usdBrl = dollarMap[date];
+                    if (goldUsd && usdBrl) {
+                        const d = new Date(ts * 1000);
+                        labels.push(`${d.getDate()} ${MESES[d.getMonth()]} ${String(d.getFullYear()).slice(2)}`);
+                        values.push((goldUsd * usdBrl) / OZ_TO_GRAMS);
+                    }
+                });
+
+                const c = getChartColors();
+                const ctx = document.getElementById('history-chart').getContext('2d');
+
+                historyChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels,
+                        datasets: [{
+                            label: 'R$/g',
+                            data: values,
+                            borderColor: c.line,
+                            backgroundColor: c.fill,
+                            borderWidth: 2,
+                            fill: true,
+                            tension: 0.3,
+                            pointRadius: 0,
+                            pointHitRadius: 10
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                callbacks: {
+                                    label: ctx => `R$ ${fmt(ctx.parsed.y, 2)}`
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                ticks: { color: c.text, maxTicksLimit: 8, font: { size: 11 } },
+                                grid: { color: c.grid }
+                            },
+                            y: {
+                                ticks: {
+                                    color: c.text,
+                                    font: { size: 11 },
+                                    callback: v => `R$${fmt(v, 0)}`
+                                },
+                                grid: { color: c.grid }
+                            }
+                        },
+                        interaction: { intersect: false, mode: 'index' }
+                    }
+                });
+
+                // Sparklines from last 7 data points
+                const goldSparkData = goldCloses.slice(-7).filter(v => v != null);
+                const dollarSparkData = dollarCloses.slice(-7).filter(v => v != null);
+                createSparkline('gold-spark', goldSparkData);
+                createSparkline('dollar-spark', dollarSparkData);
+
+            } catch (err) {
+                console.error('Erro ao carregar histórico:', err);
+            }
+        }
+
+        // Main fetch
+        async function fetchPrices() {
+            try {
+                const res = await fetch('/api/quotes?type=latest');
+                if (!res.ok) throw new Error('Erro na API');
+                const data = await res.json();
+
+                const goldUsd = data.gold.price;
+                const usdBrl = data.dollar.price;
+                currentGoldBrlPerGram = (goldUsd * usdBrl) / OZ_TO_GRAMS;
+
+                // Values
+                document.getElementById('gold-usd').textContent = `$ ${fmt(goldUsd, 2)}`;
+                document.getElementById('gold-usd').className = 'card-value';
+
+                document.getElementById('usd-brl').textContent = `R$ ${fmt(usdBrl, 4)}`;
+                document.getElementById('usd-brl').className = 'card-value';
+
+                document.getElementById('gold-brl').textContent = `R$ ${fmt(currentGoldBrlPerGram, 2)}`;
+                document.getElementById('gold-brl').className = 'card-value';
+
+                // Variation (calculate from previousClose)
+                const goldPrevClose = data.gold.previousClose;
+                const dollarPrevClose = data.dollar.previousClose;
+                const goldPct = ((goldUsd - goldPrevClose) / goldPrevClose) * 100;
+                const dollarPct = ((usdBrl - dollarPrevClose) / dollarPrevClose) * 100;
+                setChange('gold-change', goldPct);
+                setChange('dollar-change', dollarPct);
+
+                // Details: previous close + min/max
+                const prevDate = new Date(data.gold.marketTime * 1000);
+                prevDate.setDate(prevDate.getDate() - 1);
+                // Skip weekends
+                const dow = prevDate.getDay();
+                if (dow === 0) prevDate.setDate(prevDate.getDate() - 2);
+                if (dow === 6) prevDate.setDate(prevDate.getDate() - 1);
+                const prevDateStr = prevDate.toLocaleDateString('pt-BR');
+
+                setDetails('gold-details', prevDateStr,
+                    goldPrevClose, data.gold.dayLow, data.gold.dayHigh, '$', 2);
+                setDetails('dollar-details', prevDateStr,
+                    dollarPrevClose, data.dollar.dayLow, data.dollar.dayHigh, 'R$', 4);
+
+                // Table & calc
+                updatePriceTable(currentGoldBrlPerGram);
+                updateCalc();
+
+                const now = new Date().toLocaleTimeString('pt-BR');
+                document.getElementById('update-info').textContent = `Última atualização: ${now} · Atualiza a cada 60s`;
+
+            } catch (err) {
+                ['gold-usd', 'usd-brl', 'gold-brl'].forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el.classList.contains('loading')) {
+                        el.textContent = 'Erro ao carregar';
+                        el.className = 'card-value error';
+                    }
+                });
+                console.error('Erro ao buscar cotações:', err);
+            }
+        }
+
+        function fmtDate(timestamp) {
+            if (!timestamp) return '';
+            const d = new Date(parseInt(timestamp) * 1000);
+            if (isNaN(d)) return '';
+            return d.toLocaleDateString('pt-BR');
+        }
+
+        function setChange(id, pct) {
+            const el = document.getElementById(id);
+            const arrow = pct >= 0 ? '▲' : '▼';
+            el.textContent = `${arrow} ${fmt(Math.abs(pct), 2)}%`;
+            el.className = `card-change ${pct >= 0 ? 'up' : 'down'}`;
+        }
+
+        function setDetails(id, dateStr, prevClose, low, high, prefix, decimals) {
+            const el = document.getElementById(id);
+            const closeTxt = dateStr ? `${dateStr}: ${prefix}${fmt(prevClose, decimals)}` : '';
+            el.innerHTML = `${closeTxt}<br>Min: ${prefix}${fmt(low, decimals)} · Max: ${prefix}${fmt(high, decimals)}`;
+        }
+
+        // Init
+        initTheme();
+        fetchPrices();
+        loadHistory();
+        setInterval(fetchPrices, 60000);
+    </script>
+</body>
+</html>
