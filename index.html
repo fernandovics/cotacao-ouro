@@ -281,6 +281,7 @@
             display: flex;
             align-items: center;
             gap: 0.5rem;
+            flex-wrap: wrap;
         }
 
         .calc-input-group label {
@@ -465,6 +466,7 @@
             margin-top: 0.2rem;
             text-align: center;
             min-height: 0.9rem;
+            width: 100%;
         }
 
         /* Chart */
@@ -647,8 +649,10 @@
             <div class="calculator">
                 <div class="calc-input-group">
                     <label for="calc-grams">Gramas de ouro:</label>
-                    <input type="text" id="calc-grams" value="1" inputmode="decimal">
-                    <div class="input-kg-hint" id="calc-kg-hint"></div>
+                    <div>
+                        <input type="text" id="calc-grams" value="1" inputmode="decimal">
+                        <div class="input-kg-hint" id="calc-kg-hint"></div>
+                    </div>
                 </div>
                 <div class="calc-spread">
                     <label for="calc-spread-check">
@@ -698,8 +702,10 @@
                 <div class="sim-row">
                     <div class="sim-input-group">
                         <label for="sim-grams">Gramas de ouro:</label>
-                        <input type="text" id="sim-grams" value="1" inputmode="decimal">
-                        <div class="input-kg-hint" id="sim-kg-hint"></div>
+                        <div>
+                            <input type="text" id="sim-grams" value="1" inputmode="decimal">
+                            <div class="input-kg-hint" id="sim-kg-hint"></div>
+                        </div>
                     </div>
                     <div class="calc-arrow">&#10132;</div>
                     <div>
