@@ -373,6 +373,92 @@
             text-align: center;
         }
 
+        /* Simulator */
+        .simulator {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 1.5rem 2rem;
+        }
+
+        .sim-row {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-bottom: 1rem;
+        }
+
+        .sim-row:last-child { margin-bottom: 0; }
+
+        .sim-input-group {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .sim-input-group label {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            white-space: nowrap;
+        }
+
+        .sim-input-group input[type="number"] {
+            width: 110px;
+            padding: 0.45rem 0.6rem;
+            border-radius: 8px;
+            border: 1px solid var(--card-border);
+            background: var(--input-bg);
+            color: var(--text);
+            font-size: 0.9rem;
+            text-align: center;
+            font-variant-numeric: tabular-nums;
+            transition: border-color 0.3s;
+        }
+        .sim-input-group input[type="number"]:focus {
+            outline: none;
+            border-color: var(--gold-dark);
+        }
+
+        .sim-unit {
+            font-size: 0.75rem;
+            color: var(--text-dim);
+        }
+
+        .sim-divider {
+            width: 100%;
+            height: 1px;
+            background: var(--card-border);
+            margin: 0.8rem 0;
+        }
+
+        .sim-result-row {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .sim-result-value {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--gold);
+            font-variant-numeric: tabular-nums;
+        }
+
+        .sim-result-label {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .sim-result-detail {
+            font-size: 0.7rem;
+            color: var(--text-faint);
+            text-align: center;
+        }
+
         /* Chart */
         .chart-container {
             background: var(--card-bg);
@@ -552,21 +638,71 @@
             <div class="section-title">Calculadora</div>
             <div class="calculator">
                 <div class="calc-input-group">
-                    <label for="calc-grams">Gramas:</label>
+                    <label for="calc-grams">Gramas de ouro:</label>
                     <input type="number" id="calc-grams" value="1" min="0" step="0.1">
                 </div>
                 <div class="calc-spread">
                     <label for="calc-spread-check">
                         <input type="checkbox" id="calc-spread-check"> Spread
                     </label>
-                    <input type="number" id="calc-spread-value" value="5" min="0" step="0.1" disabled>
+                    <input type="number" id="calc-spread-value" value="3" min="0" step="0.1" disabled>
                     <span class="calc-spread-pct">%</span>
                 </div>
                 <div class="calc-arrow">&#10132;</div>
                 <div>
                     <div class="calc-result" id="calc-result">R$ --</div>
+                    <div class="sim-result-label">R$ / grama</div>
                     <div class="calc-result-detail" id="calc-detail"></div>
                 </div>
+                <div class="calc-arrow">&#10132;</div>
+                <div>
+                    <div class="calc-result" id="calc-total">R$ --</div>
+                    <div class="sim-result-label">Total</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Simulator -->
+        <div class="section">
+            <div class="section-title">Simulador</div>
+            <div class="simulator">
+                <div class="sim-row">
+                    <div class="sim-input-group">
+                        <label for="sim-gold">Cotação Ouro:</label>
+                        <input type="number" id="sim-gold" value="0" min="0" step="0.01">
+                        <span class="sim-unit">USD/oz</span>
+                    </div>
+                    <div class="sim-input-group">
+                        <label for="sim-dollar">Cotação Dólar:</label>
+                        <input type="number" id="sim-dollar" value="0" min="0" step="0.0001">
+                        <span class="sim-unit">BRL/USD</span>
+                    </div>
+                    <div class="calc-spread">
+                        <label for="sim-spread-check">
+                            <input type="checkbox" id="sim-spread-check"> Spread
+                        </label>
+                        <input type="number" id="sim-spread-value" value="3" min="0" step="0.1" disabled>
+                        <span class="calc-spread-pct">%</span>
+                    </div>
+                </div>
+                <div class="sim-divider"></div>
+                <div class="sim-row">
+                    <div class="sim-input-group">
+                        <label for="sim-grams">Gramas de ouro:</label>
+                        <input type="number" id="sim-grams" value="1" min="0" step="0.1">
+                    </div>
+                    <div class="calc-arrow">&#10132;</div>
+                    <div>
+                        <div class="sim-result-value" id="sim-result">R$ --</div>
+                        <div class="sim-result-label">R$ / grama simulado</div>
+                    </div>
+                    <div class="calc-arrow">&#10132;</div>
+                    <div>
+                        <div class="sim-result-value" id="sim-total">R$ --</div>
+                        <div class="sim-result-label">Total</div>
+                    </div>
+                </div>
+                <div class="sim-result-detail" id="sim-detail"></div>
             </div>
         </div>
 
@@ -615,8 +751,8 @@
 
     <script>
         const OZ_TO_GRAMS = 31.1034768;
-        const WEIGHTS = [1, 5, 10, 25, 31.1034768, 50, 100];
-        const WEIGHT_LABELS = ['1 g', '5 g', '10 g', '25 g', '1 oz (31,10 g)', '50 g', '100 g'];
+        const WEIGHTS = [1, 25, 31.1034768, 50, 100, 250, 1000];
+        const WEIGHT_LABELS = ['1 g', '25 g', '1 oz (31,10 g)', '50 g', '100 g', '250 g', '1.000 g (1 kg)'];
         const MESES = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
         let currentGoldBrlPerGram = 0;
         let historyChart = null;
@@ -695,22 +831,66 @@
 
         function updateCalc() {
             const grams = parseFloat(calcInput.value) || 0;
-            const baseResult = grams * currentGoldBrlPerGram;
 
             if (currentGoldBrlPerGram <= 0) {
                 document.getElementById('calc-result').textContent = 'R$ --';
+                document.getElementById('calc-total').textContent = 'R$ --';
                 document.getElementById('calc-detail').textContent = '';
                 return;
             }
 
             if (spreadCheck.checked) {
                 const spreadPct = parseFloat(spreadInput.value) || 0;
-                const withSpread = baseResult * (1 - spreadPct / 100);
-                document.getElementById('calc-result').textContent = `R$ ${fmt(withSpread, 2)}`;
-                document.getElementById('calc-detail').textContent = `Base: R$ ${fmt(baseResult, 2)} - ${fmt(spreadPct, 1)}% spread`;
+                const perGram = currentGoldBrlPerGram * (1 - spreadPct / 100);
+                document.getElementById('calc-result').textContent = `R$ ${fmt(perGram, 2)}`;
+                document.getElementById('calc-total').textContent = `R$ ${fmt(perGram * grams, 2)}`;
+                document.getElementById('calc-detail').textContent = `Base: R$ ${fmt(currentGoldBrlPerGram, 2)}/g - ${fmt(spreadPct, 1)}% spread`;
             } else {
-                document.getElementById('calc-result').textContent = `R$ ${fmt(baseResult, 2)}`;
+                document.getElementById('calc-result').textContent = `R$ ${fmt(currentGoldBrlPerGram, 2)}`;
+                document.getElementById('calc-total').textContent = `R$ ${fmt(currentGoldBrlPerGram * grams, 2)}`;
                 document.getElementById('calc-detail').textContent = '';
+            }
+        }
+
+        // Simulator
+        const simGold = document.getElementById('sim-gold');
+        const simDollar = document.getElementById('sim-dollar');
+        const simGrams = document.getElementById('sim-grams');
+        const simSpreadCheck = document.getElementById('sim-spread-check');
+        const simSpreadInput = document.getElementById('sim-spread-value');
+
+        [simGold, simDollar, simGrams, simSpreadInput].forEach(el =>
+            el.addEventListener('input', updateSim)
+        );
+        simSpreadCheck.addEventListener('change', () => {
+            simSpreadInput.disabled = !simSpreadCheck.checked;
+            updateSim();
+        });
+
+        function updateSim() {
+            const gold = parseFloat(simGold.value) || 0;
+            const dollar = parseFloat(simDollar.value) || 0;
+            const grams = parseFloat(simGrams.value) || 0;
+
+            if (gold <= 0 || dollar <= 0) {
+                document.getElementById('sim-result').textContent = 'R$ --';
+                document.getElementById('sim-total').textContent = 'R$ --';
+                document.getElementById('sim-detail').textContent = '';
+                return;
+            }
+
+            const basePerGram = (gold * dollar) / OZ_TO_GRAMS;
+
+            if (simSpreadCheck.checked) {
+                const spreadPct = parseFloat(simSpreadInput.value) || 0;
+                const withSpread = basePerGram * (1 - spreadPct / 100);
+                document.getElementById('sim-result').textContent = `R$ ${fmt(withSpread, 2)}`;
+                document.getElementById('sim-total').textContent = `R$ ${fmt(withSpread * grams, 2)}`;
+                document.getElementById('sim-detail').textContent = `Base: R$ ${fmt(basePerGram, 2)}/g - ${fmt(spreadPct, 1)}% spread`;
+            } else {
+                document.getElementById('sim-result').textContent = `R$ ${fmt(basePerGram, 2)}`;
+                document.getElementById('sim-total').textContent = `R$ ${fmt(basePerGram * grams, 2)}`;
+                document.getElementById('sim-detail').textContent = '';
             }
         }
 
@@ -843,7 +1023,7 @@
                 document.getElementById('gold-usd').textContent = `$ ${fmt(goldUsd, 2)}`;
                 document.getElementById('gold-usd').className = 'card-value';
 
-                document.getElementById('usd-brl').textContent = `R$ ${fmt(usdBrl, 4)}`;
+                document.getElementById('usd-brl').textContent = `R$ ${fmt(usdBrl, 3)}`;
                 document.getElementById('usd-brl').className = 'card-value';
 
                 document.getElementById('gold-brl').textContent = `R$ ${fmt(currentGoldBrlPerGram, 2)}`;
@@ -874,6 +1054,11 @@
                 // Table & calc
                 updatePriceTable(currentGoldBrlPerGram);
                 updateCalc();
+
+                // Fill simulator with current values
+                simGold.value = goldUsd.toFixed(2);
+                simDollar.value = usdBrl.toFixed(2);
+                updateSim();
 
                 const now = new Date().toLocaleTimeString('pt-BR');
                 document.getElementById('update-info').textContent = `Última atualização: ${now} · Atualiza a cada 60s`;
