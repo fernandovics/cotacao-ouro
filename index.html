@@ -281,7 +281,6 @@
             display: flex;
             align-items: center;
             gap: 0.5rem;
-            flex-wrap: wrap;
         }
 
         .calc-input-group label {
@@ -405,19 +404,21 @@
             white-space: nowrap;
         }
 
-        .sim-input-group input[type="number"] {
+        .sim-input-group input[type="number"],
+        .sim-input-group input[type="text"] {
             width: 110px;
-            padding: 0.45rem 0.6rem;
+            padding: 0.5rem 0.8rem;
             border-radius: 8px;
             border: 1px solid var(--card-border);
             background: var(--input-bg);
             color: var(--text);
-            font-size: 0.9rem;
+            font-size: 1rem;
             text-align: center;
             font-variant-numeric: tabular-nums;
             transition: border-color 0.3s;
         }
-        .sim-input-group input[type="number"]:focus {
+        .sim-input-group input[type="number"]:focus,
+        .sim-input-group input[type="text"]:focus {
             outline: none;
             border-color: var(--gold-dark);
         }
@@ -466,7 +467,6 @@
             margin-top: 0.2rem;
             text-align: center;
             min-height: 0.9rem;
-            width: 100%;
         }
 
         /* Chart */
@@ -841,7 +841,7 @@
         function updateKgHint(hintId, grams) {
             const el = document.getElementById(hintId);
             if (grams >= 1000) {
-                el.textContent = `= ${fmt(grams / 1000, 2)} kg`;
+                el.textContent = `= ${fmt(grams / 1000, 1)} kg`;
             } else {
                 el.textContent = '';
             }
